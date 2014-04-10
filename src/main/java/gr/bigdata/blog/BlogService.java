@@ -1,4 +1,9 @@
 package gr.bigdata.blog;
+import com.mongodb.Mongo;
+import net.vz.mongodb.jackson.JacksonDBCollection;
+
+import com.mongodb.DB;
+
 import com.yammer.dropwizard.Service;
 import com.yammer.dropwizard.config.Bootstrap;
 import com.yammer.dropwizard.config.Environment;
@@ -16,7 +21,17 @@ public class BlogService extends Service<BlogConfiguration> {
  
     @Override
     public void run(BlogConfiguration configuration, Environment environment) throws Exception {
-       environment.addResource(new IndexResource());
+        Mongo mongo = new Mongo(configuration.mongohost, configuration.mongoport);
+        MongoManaged mongoManaged = new MongoManaged(mongo);
+        environment.manage(mongoManaged);
+ 
+        environment.addHealthCheck(new MongoHealthCheck(mongo));
+        DB db = mongo.getDB(configuration.mongodb);
+        db.authenticate(configuration.mongouser, configuration.mongopwd.toCharArray());
+        JacksonDBCollection<Blog, String> blogs = JacksonDBCollection.wrap(db.getCollection("blogs"), Blog.class, String.class);
+        
+        environment.addResource(new IndexResource(blogs));
+        environment.addResource(new BlogResource(blogs));
     }
  
 }
