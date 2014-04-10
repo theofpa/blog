@@ -1,0 +1,4 @@
+blog
+====
+
+Sample dropwizard blog
